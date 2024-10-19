@@ -1,0 +1,52 @@
+﻿@page "/User/create"
+@using MedicineMAnagementTool.Common.DTOs;
+@using MedicineManagementTool.UI.IService;
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Add new User</PageTitle>
+<h1>Add New User</h1>
+
+<div class="row mt-5 mb-5">
+    <div class="card">
+        <div class="card-body">
+            <EditForm Model="@newUser" OnValidSubmit="@HandleValidRequest" OnInvalidSubmit="@HandleInvalidSubmit">
+                <DataAnnotationsValidator />
+                <div class="form-group">
+                    <label>Name</label>
+                    <InputText @bind-Value="@newUser.Name" class="form-control"></InputText>
+                    <ValidationMessage For="()=>newUser.Name"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <InputText @bind-Value="@newUser.Email" class="form-control"></InputText>
+                    <ValidationMessage For="()=>newUser.Email"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" @bind-value="@newUser.Password" class="form-control"></input>
+                    <ValidationMessage For="()=>newUser.Password"></ValidationMessage>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" @bind-value="@newUser.ConfirmPassword" class="form-control"></input>
+                    <ValidationMessage For="()=>newUser.ConfirmPassword"></ValidationMessage>
+                </div>
+
+                @if (IsProcessing)
+                {
+                    <button disabled class="btn btn-success btn-block form-control"><i class="fa fa-spin fa-spinner"></i>Processing...</button>
+                }
+                else
+                {
+                    <div class="form-group" style="padding-top:70px;">
+                        <button type="submit" class="btn btn-primary">
+                            <span>Add User</span>
+                        </button>
+                        <NavLink href="/allUsers" class="btn btn-danger">Return Back</NavLink>
+                    </div>
+                }
+                
+            </EditForm>
+        </div>
+    </div>
+</div>

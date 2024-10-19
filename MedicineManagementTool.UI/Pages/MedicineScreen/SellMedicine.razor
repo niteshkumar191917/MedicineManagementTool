@@ -1,0 +1,198 @@
+﻿@page "/sellMedicine"
+@page "/sellMedicine/{filter}"
+@using MedicineManagementTool.UI.IService;
+@inject IMedicineService MedicineService
+@attribute [Authorize(Roles = "User")]
+
+<h3>SellMedicine</h3>
+<div class="row mt-5 mb-5">
+    <div class="card">
+        <div class="card-body">
+
+            <div class="autocomplete ">
+                <label>Select Medicine : </label>
+                <input @bind=filter @oninput=HandleInput class="form-control" />
+                @if (avialableMedicine is not null)
+                {
+                    <ul class="options">
+                        @if (avialableMedicine.Any())
+                        {
+                            @foreach (var medicine in avialableMedicine)
+                            {
+                                <li class="option" @onclick=@(_ => SelectMedicine(medicine.Name))>
+                                    <span class="option-text">@medicine.Name</span>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li disabled class="disabled option">No results</li>
+                        }
+                    </ul>
+                }
+            </div>
+            <fieldset disabled>
+                <div class="form-group">
+                    <label>Quantity : </label>
+                    <InputNumber @bind-Value="@selectedMedicineQuantity" class="form-control"></InputNumber>
+                </div>
+            </fieldset>
+
+            <EditForm Model="@saleDetail" OnValidSubmit="HandleValidRequest">
+                <DataAnnotationsValidator />
+
+                <div class="form-group mt-3">
+                    <label>Quantity</label>
+                    <InputNumber @bind-Value="@saleDetail.Quantity" class="form-control"></InputNumber>
+                    <ValidationMessage For="()=>saleDetail.Quantity"></ValidationMessage>
+                </div>
+
+                <div class="form-group mt-3">
+                    <label>Total Price : @(saleDetail.Quantity * selectedMedicinePrice)</label>
+                </div>
+
+                @if (IsProcessing)
+                {
+                    <button disabled class="btn btn-success btn-block form-control"><i class="fa fa-spin fa-spinner"></i>Processing...</button>
+                }
+                else
+                {
+                    <div class="form-group" style="padding-top:70px;">
+                        <button type="submit" class="btn btn-primary">
+                            <span>Sell Medicine</span>
+                        </button>
+                        <NavLink href="allMedicineUser" class="btn btn-danger">Back</NavLink>
+                    </div>
+                }
+
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private IEnumerable<MedicineDTO> avialableMedicine;
+    int selectedMedicineQuantity = 0;
+    double selectedMedicinePrice = 0;
+    int selectedMedicineId = 0;
+    string? selectedMedicineName;
+    private bool IsProcessing { get; set; } = false;
+
+    [Parameter]
+    public string filter { get; set; }
+
+    [CascadingParameter(Name = "LoggedUserId")]
+    public int loggesUserId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (filter == null)
+        {
+            //new sale detail
+        }
+        else
+        {
+            responseDto = await MedicineService.GetAllAvailableMedicine();
+            if (responseDto.StatusCode == 1)
+            {
+                avialableMedicine = responseDto.ListGeneric.Where(x => x.Name.ToLower().Contains(filter.ToLower()));
+                selectedMedicineName = filter;
+                selectedMedicineQuantity = avialableMedicine!.First(c => c.Name.Equals(selectedMedicineName)).Quantity;
+                selectedMedicinePrice = avialableMedicine!.First(c => c.Name.Equals(selectedMedicineName)).Price;
+                selectedMedicineId = avialableMedicine!.First(c => c.Name.Equals(selectedMedicineName)).Id;
+                avialableMedicine = null;
+            }
+            else
+            {
+                avialableMedicine = null;
+            }
+        }
+    }
+    async Task HandleInput(ChangeEventArgs e)
+    {
+        filter = e.Value?.ToString();
+        if (filter?.Length > 0)
+        {
+            responseDto = await MedicineService.GetAllAvailableMedicine();
+            if (responseDto.StatusCode == 1)
+            {
+                avialableMedicine = responseDto.ListGeneric.Where(x => x.Name.ToLower().Contains(filter.ToLower()));
+            }
+            else
+            {
+                avialableMedicine = null;
+            }
+        }
+        else
+        {
+            avialableMedicine = null;
+            selectedMedicineQuantity = 0;
+            selectedMedicinePrice = 0;
+            selectedMedicineName = null;
+            saleDetail.Quantity = 0;
+        }
+    }
+
+    void SelectMedicine(string id)
+    {
+        filter = id;
+        selectedMedicineName = id;
+        selectedMedicineQuantity = avialableMedicine!.First(c => c.Name.Equals(selectedMedicineName)).Quantity;
+        selectedMedicinePrice = avialableMedicine!.First(c => c.Name.Equals(selectedMedicineName)).Price;
+        selectedMedicineId = avialableMedicine!.First(c => c.Name.Equals(selectedMedicineName)).Id;
+        avialableMedicine = null;
+    }
+
+    ResponseDTO<MedicineDTO> responseDto = new();
+    protected SaleDetailDTO saleDetail { get; set; } = new SaleDetailDTO();
+
+    [Parameter]
+    public int Id { get; set; }
+    [Inject]
+    public ISaleDetailService SaleDetailService { get; set; }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    [Inject]
+    private NavigationManager navigationManager { get; set; }
+
+    protected async void HandleValidRequest()
+    {
+        IsProcessing = true;
+        var newSaleDetail = new SaleDetailDTO();
+        newSaleDetail.MedicineId = selectedMedicineId;
+        newSaleDetail.UserId = loggesUserId;
+        newSaleDetail.Quantity = saleDetail.Quantity;
+
+        if (selectedMedicineName == null)
+        {
+            await JSRuntime.InvokeVoidAsync("ShowToastr", "error", "select medicine !!");
+        }
+        else if (saleDetail.Quantity > selectedMedicineQuantity)
+        {
+            await JSRuntime.InvokeVoidAsync("ShowToastr", "error", "Quantity can't be exceed than stock !!");
+        }
+        else if (saleDetail.Quantity < 1)
+        {
+            await JSRuntime.InvokeVoidAsync("ShowToastr", "error", "select atleast 1 quantity !!");
+        }
+        else
+        {
+            var result = await SaleDetailService.CreateSaleDetail(newSaleDetail);
+            if (result)
+            {
+                navigationManager.NavigateTo("/allMedicineUser");
+                await JSRuntime.InvokeVoidAsync("ShowToastr", "added", "Medicine Sell successfully!!");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("ShowToastr", "error", "error !!");
+            }
+        }
+        IsProcessing = false;
+        StateHasChanged();
+    }
+}

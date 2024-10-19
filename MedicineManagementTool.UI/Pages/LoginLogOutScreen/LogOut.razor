@@ -1,0 +1,13 @@
+﻿@page "/logout"
+@using MedicineManagementTool.UI.IService;
+@inject NavigationManager NavigationManager
+@inject IUserService UserService
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await UserService.Logout();
+        NavigationManager.NavigateTo("/loginPage");
+        StateHasChanged();
+    }
+}

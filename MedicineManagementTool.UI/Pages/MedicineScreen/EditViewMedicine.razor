@@ -1,0 +1,136 @@
+﻿@page "/viewMedicine/{Id:int}/{IsView:bool}"
+@page "/medicine/edit/{Id:int}"
+@page "/addNewMedicine"
+
+@using MedicineManagementTool.UI.IService;
+@inject IJSRuntime JSRuntime
+@inject IMedicineService MedicineService
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "Admin")]
+
+
+@if (IsView)
+{
+    <PageTitle>view Medicine</PageTitle>
+    <h1>View Medicine</h1>
+
+    <div class="col-3 offset-10">
+        <NavLink href="@($"medicine/edit/{Id}")" class="btn btn-primary w-25 form-control"><i class="fa fa-edit" aria-hidden="true"></i></NavLink>
+    </div>
+}
+else if (Id != 0)
+{
+    <PageTitle>Update Medicine</PageTitle>
+    <h1>Update Medicine</h1>
+}
+else
+{
+    <PageTitle>Add new Medicine</PageTitle>
+    <h1>Add New Medicine</h1>
+}
+
+
+<div class="row mt-5 mb-5">
+    <div class="card">
+        <div class="card-body">
+            <EditForm Model="@medicine" OnValidSubmit="@HandleValidRequest" OnInvalidSubmit="@HandleInvalidSubmit">
+                @if (IsView)
+                {
+                    <fieldset disabled>
+                        <MedicineForm medicine="medicine"></MedicineForm>
+                    </fieldset>
+                    <div class="form-group" style="padding-top:70px;">
+                        <NavLink href="/allMedicine" class="btn btn-danger">Return Back</NavLink>
+                    </div>
+                }
+                else
+                {
+
+                    <MedicineForm medicine="medicine"></MedicineForm>
+
+
+                    @if (IsProcessing)
+                    {
+                        <button disabled class="btn btn-success btn-block form-control"><i class="fa fa-spin fa-spinner"></i>Processing...</button>
+                    }
+                    else
+                    {
+                        <div class="form-group" style="padding-top:70px;">
+                            <button type="submit" class="btn btn-primary">
+                                @if (Id != 0)
+                                {
+                                    <span>Update Medicine</span>
+                                }
+                                else
+                                {
+                                    <span>Add Medicine</span>
+                                }
+                            </button>
+                            <button type="button" onclick="window.history.go(-1)" class="btn btn-danger">Return Back</button>
+                        </div>
+                    }
+                }
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    MedicineDTO medicine = new MedicineDTO();
+    private bool IsProcessing { get; set; } = false;
+    [Parameter]
+    public int Id { get; set; }
+    [Parameter]
+    public bool IsView { get; set; } = false;
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            var medicineDetail = await MedicineService.GetMedicineById(Id);
+            if (medicineDetail != null)
+            {
+                medicine = medicineDetail;
+            }
+        }
+    }
+
+    protected async void HandleValidRequest()
+    {
+        IsProcessing = true;
+        bool result;
+        if (Id == 0)
+        {
+            result = await MedicineService.AddNewMedicine(medicine);
+        }
+        else
+        {
+            result = await MedicineService.UpdateMedicineData(medicine);
+        }
+
+        if (result)
+        {
+            NavigationManager.NavigateTo("allMedicine");
+            if (Id == 0)
+            {
+                await JSRuntime.InvokeVoidAsync("ShowToastr", "added", "new user added successfully!!");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("ShowToastr", "updated", "Medicine updated successfully!!");
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("ShowToastr", "error", "Medicine name and code must be unique!!");
+        }
+        IsProcessing = false;
+        StateHasChanged();
+    }
+
+    protected async void HandleInvalidSubmit()
+    {
+        await JSRuntime.InvokeVoidAsync("ShowToastr", "error", "error!!");
+    }
+}
+

@@ -1,0 +1,118 @@
+﻿@page "/viewSaleDetails"
+@attribute [Authorize(Roles = "User")]
+@using MedicineManagementTool.UI.IService;
+@inject ISaleDetailService SaleDetailsService
+@inject IMedicineService MedicineService
+@inject IJSRuntime JsRuntime
+<PageTitle>SaleDetailList</PageTitle>
+
+<div class="row">
+    <div class="col-3"><h3>Sale Detail's List</h3></div>
+</div>
+@if (_saleDetails == null)
+{
+    <p>empty......</p>
+}
+else
+{
+    @if (_saleDetails.Any())
+    {
+        <div class="row">
+            @foreach (var saleDetail in _saleDetails)
+            {
+                <div class="container col-4 p-2">
+                    <section class="mx-auto my-5" style="max-width: 23rem;">
+
+                        <div class="card">
+                            <div class="bg-image hover-overlay ripple" data-mdb-ripple-color="light">
+                                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1130&q=80" class="img-fluid" />
+                                <a href="#!">
+                                    <div class="mask" style="background-color: rgba(251, 251, 251, 0.15);"></div>
+                                </a>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title font-weight-bold"><a>Medicine Management Tool</a></h5>
+
+                                <p class="card-text">
+                                    Transcation Id : @saleDetail.SaleId
+                                </p>
+                                <hr class="my-4" />
+                                <p class="lead">User Id : <strong>@saleDetail.UserId</strong></p>
+                                <p class="lead">User Name : <strong>@LoggedUserName</strong></p>
+                                <p class="lead">Medicine Id : <strong>@saleDetail.MedicineId</strong></p>
+                                <p class="lead">Medicine Name : <strong> @medicineName[saleDetail.MedicineId] </strong></p>
+                                <p class="lead">Total Quantity : <strong>@saleDetail.Quantity</strong></p>
+
+                            </div>
+                            <div class="card-footer">
+                                <p>Total Price : <strong>Rs.@saleDetail.TotalPrice</strong></p>
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
+            }
+        </div>
+    }
+
+    @if (_saleDetails.Count != 0)
+    {
+        <div class="table-responsive">
+            <Pagination CurrentPage="currentPage" Radius="1" TotalPageQuantity="totalPageQuantity"
+                SelectedPage="SelectedPage"></Pagination>
+        </div>
+    }
+}
+
+@code {
+    [CascadingParameter(Name = "LoggedUserId")]
+    public int userId { get; set; }
+    [CascadingParameter(Name = "LoggedUserName")]
+    public string LoggedUserName { get; set; }
+    private List<SaleDetailDTO> _saleDetails = new();
+    ResponseDTO<SaleDetailDTO> responseDto = new();
+    private int currentPage = 1;
+    private int totalPageQuantity;
+    private int quantityPerPage = 6;    
+
+    Dictionary<int, string> medicineName = new Dictionary<int, string>();
+    private async Task GetMedicineName(List<SaleDetailDTO> _saleDetails)
+    {
+        foreach(var item in _saleDetails)
+        {
+            MedicineDTO medicine = await MedicineService.GetMedicineById(item.MedicineId);
+            if (!medicineName.ContainsKey(item.MedicineId))
+            medicineName.Add(item.MedicineId,medicine.Name);
+        }        
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetMedicineAsync();
+    }
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await GetMedicineAsync(page);
+    }
+
+    async Task GetMedicineAsync(int page = 1)
+    {
+        responseDto = await SaleDetailsService.GetAllSaleDetail(currentPage, quantityPerPage, userId);
+        if (responseDto.StatusCode == 1)
+        {
+            _saleDetails = responseDto.ListGeneric;
+            await GetMedicineName(_saleDetails);
+
+            totalPageQuantity = (int)Math.Ceiling(responseDto.Count / (double)quantityPerPage);
+
+            StateHasChanged();
+        }
+        else
+        {
+            _saleDetails = null;
+        }
+        StateHasChanged();
+    }
+}

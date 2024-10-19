@@ -1,0 +1,51 @@
+﻿@using MedicineManagementTool.UI.Helper;
+@using MedicineManagementTool.UI.IService;
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims;
+@inject ILocalStorageService LocalStorage
+@inject IUserService UserService
+
+<CascadingValue Value="@loggedUserName" Name="LoggedUserName">
+    <CascadingValue Value="@loggedUserId" Name="LoggedUserId">
+        <CascadingAuthenticationState>
+            <Router AppAssembly="@typeof(App).Assembly">
+                <Found Context="routeData">
+                    <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                        <NotAuthorized>
+                            <MedicineManagementTool.UI.Pages.LoginLogOutScreen.LoginRedirect></MedicineManagementTool.UI.Pages.LoginLogOutScreen.LoginRedirect>
+                        </NotAuthorized>
+                        <Authorizing>
+                            AUTHORIZING!!!!!
+                        </Authorizing>
+                    </AuthorizeRouteView>
+                    <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+                </Found>
+                <NotFound>
+                    <PageTitle>Not found</PageTitle>
+                    <LayoutView Layout="@typeof(MainLayout)">
+                        <p role="alert">Sorry, there's nothing at this address.</p>
+                    </LayoutView>
+                </NotFound>
+            </Router>
+        </CascadingAuthenticationState>
+    </CascadingValue>
+</CascadingValue>
+
+@code {
+    protected int loggedUserId = 0;
+    protected string tokenFromLS = string.Empty;
+    protected string loggedUserName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tokenFromLS = await LocalStorage.GetItemAsync<string>("accessToken");
+        if (!string.IsNullOrEmpty(tokenFromLS))
+        {
+            IEnumerable<Claim> claims = JwtParser.ParseClaimsFromJwt(tokenFromLS);
+            var email = claims.First(c => c.Type.Contains("emailaddress")).Value;
+            loggedUserName = claims.First(c => c.Type.Contains("name")).Value;
+            loggedUserId = await UserService.GetUserId(email);
+            Console.WriteLine(loggedUserId);
+        }
+    }
+}

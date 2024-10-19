@@ -1,0 +1,55 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Medicine Tool</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        
+        <AuthorizeView Roles="Admin">
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="allUsers">
+                    <span class="fa-solid fa-user-plus me-3" aria-hidden="true"></span> View All User
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="allMedicine">
+                    <span class="fa fa-medkit me-3" aria-hidden="true"></span> View All Medicine
+                </NavLink>
+            </div>
+           
+        </AuthorizeView>
+
+        <AuthorizeView Roles="User">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="viewSaleDetails">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> View Sale Details
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="allMedicineUser">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span>Medicine For Sell
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

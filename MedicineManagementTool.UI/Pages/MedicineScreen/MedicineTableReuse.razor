@@ -1,0 +1,44 @@
+﻿@page "/allMedicine"
+@page "/allMedicineUser"
+@using System.Security.Claims;
+@inject NavigationManager NavigationManager;
+@attribute [Authorize]
+
+<div class="row">
+    <div class="col-3"><h3>Medicine List</h3></div>
+    @if (IsAdmin)
+    {
+        <div class="col-3 offset-6">
+            <NavLink href="@($"addNewMedicine")" class="btn btn-primary form-control"><i class="fa fa-plus" aria-hidden="true"></i></NavLink>
+        </div>
+    }
+    else
+    {
+        <div class="col-3 offset-6">
+            <NavLink href="@($"sellMedicine")" class="btn btn-primary form-control">Sell Medicine</NavLink>
+        </div>
+    }
+</div>
+
+<MedicineTable isAdmin=@IsAdmin></MedicineTable>
+
+@code {
+    [CascadingParameter] public Task<AuthenticationState> authStateTask { get; set; }
+    private bool IsAdmin { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await authStateTask).User;
+        if (user.Identity.IsAuthenticated)
+        {
+            if (user.IsInRole("Admin"))
+            {
+
+                IsAdmin = true;
+            }
+            else
+            {
+                IsAdmin = false;
+            }
+        }
+    }
+}

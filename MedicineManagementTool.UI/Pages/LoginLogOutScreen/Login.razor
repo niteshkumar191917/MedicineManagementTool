@@ -1,0 +1,41 @@
+﻿@layout LoginLayout
+@page "/loginPage"
+
+<section class="vh-100">
+    <div class="container py-5 h-100">
+        <div class="row d-flex align-items-center justify-content-center h-100">
+            <div class="col-md-8 col-lg-7 col-xl-6">
+                <img src="https://img.freepik.com/free-vector/doctors-health-illustration_53876-26658.jpg?w=996&t=st=1686047043~exp=1686047643~hmac=446ad54b218ae6fd69a228cde982a07d53c4cd0eb18997a1120eb863bfa1cce6"
+                     class="img-fluid" alt="Phone image">
+            </div>
+            <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+                <EditForm Model="@UserCredentials" OnValidSubmit="HandleLoginCredentials" OnInvalidSubmit="@HandleInvalidSubmit">
+                    <DataAnnotationsValidator />
+                    <!-- Email input -->
+                    <div class="form-outline mb-4">
+                        <label class="form-label">Email address</label>
+                        <InputText type="email" @bind-Value="@UserCredentials.Email" class="form-control form-control-lg" />
+                        <ValidationMessage For="()=>UserCredentials.Email"></ValidationMessage>
+                    </div>
+
+                    <!-- Password input -->
+                    <div class="form-outline mb-4">
+                        <label class="form-label">Password</label>
+                        <InputText type="password" @bind-Value="@UserCredentials.Password" class="form-control form-control-lg" />
+                        <ValidationMessage For="()=>UserCredentials.Password"></ValidationMessage>
+                    </div>
+
+                    <!-- Submit button -->
+                    @if (IsProcessing)
+                    {
+                        <button disabled class="btn btn-success btn-block form-control"><i class="fa fa-spin fa-spinner"></i>Processing...</button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-success btn-block form-control">Log in</button>
+                    }                    
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</section>

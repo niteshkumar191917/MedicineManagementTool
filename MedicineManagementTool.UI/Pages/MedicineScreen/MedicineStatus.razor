@@ -1,0 +1,12 @@
+﻿@if (quantity > 0)
+{
+    <span class="badge badge-success bg-success text-black">In Stock</span>
+}
+else
+{
+    <span class="badge badge-danger bg-danger  text-black">Out Of Stock</span>
+}
+@code {
+    [Parameter]
+    public int quantity { get; set; }
+}

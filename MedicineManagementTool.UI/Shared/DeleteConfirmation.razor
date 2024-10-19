@@ -1,0 +1,77 @@
+﻿@using Blazored.LocalStorage;
+@using MedicineManagementTool.UI.IService;
+
+@inject IJSRuntime JSRuntime
+@inject IMedicineService MedicineService
+
+
+<div class="modal @ModalClass" tabindex="-1" role="dialog" style="display:@ModalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Medicine Record</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure want to delete?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick="() => ConfirmDelete()">Yes</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="() => Close()">No</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@if (ShowBackdrop)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+
+@code {
+
+    int id;
+    [Parameter]
+    public EventCallback ConfirmationChanged { get; set; }
+
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    public bool ShowBackdrop = false;
+    public void Open(int idP)
+    {
+        id = idP;
+        ModalDisplay = "block;";
+        ModalClass = "";
+        ShowBackdrop = true;
+        StateHasChanged();
+    }
+
+    public void Close()
+    {
+        ModalDisplay = "none";
+        ModalClass = "";
+        ShowBackdrop = false;
+        StateHasChanged();
+    }
+
+
+    public async Task ConfirmDelete()
+    {
+        var statusDto = await MedicineService.DeleteMedicineData(id);
+        if (statusDto)
+        {
+            await ConfirmationChanged.InvokeAsync();
+            await JSRuntime.InvokeVoidAsync("ShowToastr", "deleted", "Medicine Deleted successfully!!");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("ShowToastr", "error", "Something Wrong Happen!");
+        }
+        Close();
+    }
+
+}

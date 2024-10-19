@@ -1,0 +1,179 @@
+﻿@page "/allUsers"
+@using MedicineManagementTool.UI.IService;
+@attribute [Authorize(Roles = "Admin")]
+
+@inject IUserService UserService
+@inject IJSRuntime JsRuntime
+
+<PageTitle>UserList</PageTitle>
+
+<div class="row">
+    <div class="col-3"><h3>User List</h3></div>
+    <div class="col-3 offset-6">
+        <NavLink href="@($"User/create")" class="btn btn-primary form-control">Add New User</NavLink>
+    </div>
+</div>
+@if (_userDetail == null)
+{
+    <p>empty......</p>
+}
+else
+{
+    <input type="text" @bind-Value="@search" @bind-Value:event="oninput" @onkeyup="()=>SearchAsync()" class="form-control"></input>
+
+    <div class="m-2 p-2">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="sort-th" @onclick="@(() => SortTable("Name"))">UserName<span class="fa @(SetSortIcon("Name"))"></span></th>
+                    <th class="sort-th" @onclick="@(() => SortTable("Email"))">Email Id<span class="fa @(SetSortIcon("Email"))"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (_userDetail.Any())
+                {
+                    @foreach (var user in _userDetail)
+                    {
+                        <tr>                            
+                            <td>@user.Name</td>                            
+                            <td>@user.Email</td>  
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5">No records found</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (_userDetail.Count != 0)
+    {
+        <div class="table-responsive">
+            <Pagination CurrentPage="currentPage" Radius="1" TotalPageQuantity="totalPageQuantity"
+                        SelectedPage="SelectedPage"></Pagination>
+        </div>
+    }
+}
+
+@code {
+
+    private List<UserDTO> _userDetail = new();
+    ResponseDTO<UserDTO> responseDto = new();
+
+    string search = string.Empty;
+    string statusMessage = string.Empty;
+    private int currentPage = 1;
+    private int totalPageQuantity;
+    private int quantityPerPage = 5;
+    int sortCount = 1;
+    private bool isSortedAscending = true;
+    private string activeSortColumn = "Id";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(search))
+        {
+            await SearchAsync();
+        }
+        else
+        {
+            await GetUserAsync();
+        }
+    }
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        if (!string.IsNullOrEmpty(search))
+        {
+            await SearchAsync(page);
+        }
+        else
+        {
+            await GetUserAsync(page);
+        }
+    }
+
+    async Task GetUserAsync(int page = 1)
+    {
+
+        responseDto = await UserService.GetAllUser(sortCount, activeSortColumn, currentPage, quantityPerPage);
+        if (responseDto.StatusCode == 1)
+        {
+            statusMessage = string.Empty;
+            _userDetail = responseDto.ListGeneric;
+            totalPageQuantity = (int)Math.Ceiling(responseDto.Count / (double)quantityPerPage);
+            StateHasChanged();
+        }
+        else
+        {
+            _userDetail = null;
+        }
+        StateHasChanged();
+    }
+    async Task SearchAsync(int page = 1)
+    {
+        if (!string.IsNullOrEmpty(search))
+        {
+            currentPage = page;
+            responseDto = await UserService.SearchAsync(search, page, quantityPerPage);
+            if (responseDto.StatusCode == 1)
+            {
+                statusMessage = string.Empty;
+                _userDetail = responseDto.ListGeneric;
+                totalPageQuantity = (int)Math.Ceiling(responseDto.Count / (double)quantityPerPage);
+                StateHasChanged();
+            }
+            else
+            {
+                await JsRuntime.InvokeVoidAsync("ShowToastr", "Search", "This is not Exist!");
+            }
+        }
+        else
+        {
+            await GetUserAsync();
+        }
+    }
+
+    async Task SortTable(string columnName)
+    {
+        if (columnName != activeSortColumn)
+        {
+            sortCount = 1;
+            activeSortColumn = columnName;
+            await GetUserAsync(1);
+            isSortedAscending = true;
+        }
+        else
+        {
+            if (isSortedAscending)
+            {
+                sortCount = 2;
+            }
+            else
+            {
+                sortCount = 1;
+            }
+            isSortedAscending = !isSortedAscending;
+            await GetUserAsync(currentPage);
+        }
+    }
+
+    private string SetSortIcon(string columnName)
+    {
+        if (activeSortColumn != columnName)
+        {
+            return string.Empty;
+        }
+        if (isSortedAscending)
+        {
+            return "fa-sort-down";
+        }
+        else
+        {
+            return "fa-sort-up";
+        }
+    }
+}

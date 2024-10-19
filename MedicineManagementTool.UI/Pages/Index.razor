@@ -1,0 +1,15 @@
+﻿@page "/"
+@attribute [Authorize]
+@inject NavigationManager NavigationManager
+
+<PageTitle>Index</PageTitle>
+
+
+<h1><strong>WelCome TO Medicine Management Tool</strong></h1>
+
+@code{
+    protected override async Task OnInitializedAsync()
+    {
+        NavigationManager.NavigateTo("/loginPage");
+    }
+}
